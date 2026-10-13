@@ -7,6 +7,7 @@ import {
   DuplicateTooltip,
 } from '@/components/DuplicateTooltip';
 import { normalizeUrl } from '@/lib/normalize-url';
+import { FaviconBadger } from '@/lib/favicon-badge';
 import { TitlePrefixer } from '@/lib/title-prefix';
 import type { OpenTab, TabStateMessage } from '@/lib/messages';
 
@@ -23,6 +24,16 @@ export default defineContentScript({
     let openByKey = new Map<string, OpenTab>();
 
     const prefixer = new TitlePrefixer();
+    const faviconBadger = new FaviconBadger(async (url) => {
+      try {
+        return (await browser.runtime.sendMessage({
+          type: 'fetch-favicon',
+          url,
+        })) as string | null;
+      } catch {
+        return null;
+      }
+    });
     const tooltipStore = createTooltipStore();
 
     // ------------------------------------------------------------- tooltip UI
@@ -53,6 +64,7 @@ export default defineContentScript({
         Boolean(next?.isDuplicate && next.titlePrefixEnabled),
         next?.titlePrefix ?? '',
       );
+      faviconBadger.update(Boolean(next?.isDuplicate && next.faviconBadgeEnabled));
 
       if (!next?.tooltipEnabled) tooltipStore.hide();
     }
@@ -214,6 +226,7 @@ export default defineContentScript({
     ctx.onInvalidated(() => {
       cancelHover();
       prefixer.dispose();
+      faviconBadger.dispose();
     });
   },
 });

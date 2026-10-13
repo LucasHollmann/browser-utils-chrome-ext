@@ -96,6 +96,17 @@ export function App() {
           <label className="row">
             <input
               type="checkbox"
+              checked={settings.faviconBadgeEnabled}
+              onChange={(event) =>
+                void patch({ faviconBadgeEnabled: event.target.checked })
+              }
+            />
+            <span>Ponto de notificação no ícone da aba duplicada</span>
+          </label>
+
+          <label className="row">
+            <input
+              type="checkbox"
               checked={settings.tooltipEnabled}
               onChange={(event) => void patch({ tooltipEnabled: event.target.checked })}
             />

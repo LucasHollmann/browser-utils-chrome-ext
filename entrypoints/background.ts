@@ -110,6 +110,7 @@ export default defineBackground(() => {
       isDuplicate: duplicate,
       titlePrefixEnabled: settings.titlePrefixEnabled,
       titlePrefix: settings.titlePrefix,
+      faviconBadgeEnabled: settings.faviconBadgeEnabled,
       tooltipEnabled: settings.tooltipEnabled,
       focusExistingTabEnabled: settings.focusExistingTabEnabled,
       normalize: settings.normalize,
@@ -278,6 +279,13 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (message?.type === 'fetch-favicon') {
+      void (async () => {
+        sendResponse(await fetchIconAsDataUrl(message.url));
+      })();
+      return true;
+    }
+
     if (message?.type === 'focus-tab') {
       void (async () => {
         try {
@@ -320,6 +328,42 @@ export default defineBackground(() => {
 
     return false;
   });
+
+  // ---------------------------------------------------------------- favicon
+
+  const MAX_ICON_BYTES = 256 * 1024;
+
+  /**
+   * Baixa um favicon e devolve como data: URL. Feito aqui, e nao no content
+   * script, porque o background tem host_permissions e o canvas da pagina nao
+   * aceitaria uma imagem cross-origin sem CORS.
+   */
+  async function fetchIconAsDataUrl(url: string): Promise<string | null> {
+    try {
+      const response = await fetch(url, { cache: 'force-cache', credentials: 'omit' });
+      if (!response.ok) return null;
+
+      const buffer = await response.arrayBuffer();
+      if (buffer.byteLength === 0 || buffer.byteLength > MAX_ICON_BYTES) return null;
+
+      const type = response.headers.get('content-type')?.split(';')[0] ?? 'image/png';
+      if (!type.startsWith('image/')) return null;
+
+      return `data:${type};base64,${toBase64(buffer)}`;
+    } catch {
+      return null;
+    }
+  }
+
+  function toBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    // Em blocos, para nao estourar o limite de argumentos de fromCharCode.
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary);
+  }
 
   // --------------------------------------------------------------- bootstrap
 

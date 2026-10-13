@@ -5,7 +5,8 @@ Extensão Manifest V3 (Brave/Chrome) que identifica páginas duplicadas entre as
 - **Prefixo no título**: abas com a mesma URL (após normalização) ganham um prefixo configurável (`🔁 `). O prefixo some quando a aba deixa de ser duplicada.
 - **Tooltip em links**: ao passar o mouse sobre um link cuja página já está aberta em outra aba, aparece um aviso com o título daquela aba.
 - **Alt+clique / clique do meio** em um link já aberto focam a aba existente em vez de abrir outra.
-- **Badge no ícone**: o ícone da extensão mostra quantas abas são repetidas (ou seja, quantas dá para fechar).
+- **Ponto no favicon**: a aba duplicada ganha um ponto vermelho de notificação sobre o próprio favicon, visível na barra de abas.
+- **Badge no ícone da extensão**: mostra quantas abas são repetidas (ou seja, quantas dá para fechar).
 - **Popup**: lista os grupos de abas duplicadas (ir para / fechar) e liga/desliga cada funcionalidade.
 
 Stack: [WXT](https://wxt.dev) + React + TypeScript.
@@ -44,8 +45,9 @@ Por padrão a extensão não roda em janelas anônimas. Para testar esse cenári
 | [lib/settings.ts](lib/settings.ts) | Configurações em `chrome.storage.sync`. |
 | [lib/messages.ts](lib/messages.ts) | Contrato de mensagens entre background, content script e popup. |
 | [lib/title-prefix.ts](lib/title-prefix.ts) | Aplica/remove o prefixo no `<title>` com `MutationObserver`. |
+| [lib/favicon-badge.ts](lib/favicon-badge.ts) | Redesenha o favicon da aba com um ponto de notificação. |
 | [entrypoints/background.ts](entrypoints/background.ts) | Fonte da verdade: mapa `tabId → URL normalizada`, detecção de duplicatas, transmissão de estado. |
-| [entrypoints/content.tsx](entrypoints/content.tsx) | Prefixo no título + tooltip (Shadow DOM) + Alt/meio-clique. |
+| [entrypoints/content.tsx](entrypoints/content.tsx) | Prefixo no título + ponto no favicon + tooltip (Shadow DOM) + Alt/meio-clique. |
 | [entrypoints/popup/](entrypoints/popup/) | Popup React. |
 | [scripts/gen-icons.mjs](scripts/gen-icons.mjs) | Desenha os PNGs do ícone (sem dependências; `npm run icons`). |
 
@@ -56,4 +58,5 @@ Permissões usadas: `tabs`, `storage` e `host_permissions: ["<all_urls>"]`.
 ## Limitações conhecidas
 
 - Abas suspensas/descartadas pela economia de memória do Brave não executam content script: elas **contam** como duplicatas para as outras abas, mas só recebem o prefixo quando são reativadas (o content script pede o estado ao voltar).
-- Páginas restritas (`brave://`, `chrome://`, Web Store) não aceitam content script: entram na contagem de duplicatas, mas não recebem prefixo nem tooltip.
+- Páginas restritas (`brave://`, `chrome://`, Web Store) não aceitam content script: entram na contagem de duplicatas, mas não recebem prefixo, ponto no favicon nem tooltip.
+- O ponto no favicon depende de a página ter um favicon acessível. Quando ele não carrega (formato exótico, 404), a extensão desenha um quadrado neutro com o ponto em vez de deixar a aba sem ícone.

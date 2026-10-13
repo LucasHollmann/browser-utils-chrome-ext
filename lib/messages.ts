@@ -29,6 +29,7 @@ export interface TabStateMessage {
   isDuplicate: boolean;
   titlePrefixEnabled: boolean;
   titlePrefix: string;
+  faviconBadgeEnabled: boolean;
   tooltipEnabled: boolean;
   focusExistingTabEnabled: boolean;
   normalize: NormalizeOptions;
@@ -39,6 +40,12 @@ export interface TabStateMessage {
 /** Content script → background, ao (re)iniciar. */
 export interface RequestStateMessage {
   type: 'request-state';
+}
+
+/** Content script → background: baixar um favicon sem esbarrar em CORS. */
+export interface FetchFaviconMessage {
+  type: 'fetch-favicon';
+  url: string;
 }
 
 /** Content script → background: focar a aba já aberta. */
@@ -54,5 +61,6 @@ export interface GetGroupsMessage {
 
 export type ToBackgroundMessage =
   | RequestStateMessage
+  | FetchFaviconMessage
   | FocusTabMessage
   | GetGroupsMessage;

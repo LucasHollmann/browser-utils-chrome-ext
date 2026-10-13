@@ -12,6 +12,8 @@ export interface Settings {
   focusExistingTabEnabled: boolean;
   /** Mostra no ícone da extensão quantas abas estão repetidas. */
   badgeEnabled: boolean;
+  /** Marca o favicon das abas duplicadas com um ponto de notificação. */
+  faviconBadgeEnabled: boolean;
   /** Não mistura abas anônimas com abas normais. */
   separateIncognito: boolean;
   /** Regras de normalização de URL. */
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
   tooltipEnabled: true,
   focusExistingTabEnabled: true,
   badgeEnabled: true,
+  faviconBadgeEnabled: true,
   separateIncognito: true,
   normalize: { ...DEFAULT_NORMALIZE_OPTIONS },
 };
