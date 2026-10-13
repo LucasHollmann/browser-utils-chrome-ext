@@ -1,0 +1,178 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --danger: #b91c1c;
+  --surface: #f9fafb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111827;
+    --fg: #f3f4f6;
+    --muted: #9ca3af;
+    --border: #374151;
+    --accent: #60a5fa;
+    --danger: #f87171;
+    --surface: #1f2937;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 380px;
+  max-height: 600px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.app {
+  padding: 12px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+h1 {
+  font-size: 14px;
+  margin: 0;
+}
+
+h2 {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.icon-button {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.icon-button:hover {
+  color: var(--fg);
+}
+
+.options {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.row.indent {
+  padding-left: 22px;
+}
+
+.text-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg);
+  padding: 4px 6px;
+  font: inherit;
+}
+
+.summary,
+.empty {
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.empty {
+  text-align: center;
+  padding: 18px 0;
+}
+
+.groups,
+.tabs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.group-url {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+
+.favicon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 3px;
+}
+
+.favicon.placeholder {
+  background: var(--border);
+}
+
+.tab-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  padding: 2px 4px;
+}
+
+.link-button.danger {
+  color: var(--danger);
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
