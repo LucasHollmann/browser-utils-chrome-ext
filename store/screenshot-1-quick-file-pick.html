@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        width: 1280px;
+        height: 800px;
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 45%, #818cf8 100%);
+        font: 13px/1.5 'Segoe UI', system-ui, sans-serif;
+        color: #111827;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+      }
+
+      .caption {
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+      }
+
+      /* ---------------------------------------------- janela do navegador */
+
+      .window {
+        width: 1160px;
+        height: 650px;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .tabstrip {
+        background: #dee1e6;
+        padding: 8px 10px 0;
+        display: flex;
+        gap: 4px;
+        align-items: flex-end;
+      }
+
+      .tab {
+        background: #f1f3f4;
+        color: #3c4043;
+        border-radius: 8px 8px 0 0;
+        padding: 8px 12px;
+        font-size: 12px;
+        width: 210px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .tab.active { background: #ffffff; font-weight: 600; }
+      .tab .fav {
+        width: 14px; height: 14px; border-radius: 3px; flex: none;
+        position: relative;
+      }
+      .tab .fav.a { background: #ea4335; }
+      .tab .fav.b { background: #1a73e8; }
+      .tab .fav.c { background: #34a853; }
+      .tab .label { overflow: hidden; text-overflow: ellipsis; }
+      .dot {
+        position: absolute; right: -3px; top: -3px;
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #dc2626; border: 1.5px solid #f1f3f4;
+      }
+      .tab.active .dot { border-color: #ffffff; }
+
+      .toolbar {
+        background: #ffffff;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .nav { color: #5f6368; font-size: 15px; letter-spacing: 3px; }
+      .omnibox {
+        flex: 1;
+        background: #f1f3f4;
+        border-radius: 999px;
+        padding: 6px 14px;
+        color: #3c4043;
+        font-size: 12px;
+      }
+      .ext-icon { width: 22px; height: 22px; border-radius: 5px; }
+      .ext-badge {
+        position: relative;
+      }
+      .ext-badge::after {
+        content: '2';
+        position: absolute;
+        right: -5px; bottom: -3px;
+        background: #dc2626; color: #fff;
+        font-size: 9px; font-weight: 700; line-height: 1;
+        padding: 2px 3px; border-radius: 4px;
+      }
+
+      /* -------------------------------------------------- página de fundo */
+
+      .page {
+        flex: 1;
+        position: relative;
+        background: #f3f4f6;
+        padding: 26px 30px;
+      }
+      .composer {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 16px;
+        width: 560px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      }
+      .composer h3 { margin: 0 0 10px; font-size: 14px; }
+      .composer .field {
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        padding: 10px; color: #9ca3af; font-size: 13px; margin-bottom: 12px;
+      }
+      .composer .attach {
+        display: inline-flex; align-items: center; gap: 7px;
+        border: 1px solid #c7d2fe; background: #eef2ff; color: #4338ca;
+        border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600;
+      }
+
+      /* ------------------------------------------- overlay da extensão */
+
+      .backdrop {
+        position: absolute; inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .panel {
+        width: 420px; padding: 16px; border-radius: 12px;
+        background: #ffffff; color: #111827;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+        font: 500 13px/1.45 'Segoe UI', system-ui, sans-serif;
+      }
+      .panel .title { font-weight: 600; font-size: 14px; }
+      .panel .sub { opacity: 0.65; margin-top: 2px; }
+      .option {
+        display: flex; align-items: center; gap: 12px;
+        width: 100%; padding: 10px; margin-top: 8px;
+        border: 1px solid #e5e7eb; border-radius: 10px; background: #f9fafb;
+      }
+      .option.focus { border-color: #a5b4fc; background: #eef2ff; }
+      .thumb {
+        width: 56px; height: 56px; border-radius: 8px; flex: none;
+        background: linear-gradient(135deg, #0ea5e9, #6366f1 55%, #ec4899);
+        display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700;
+      }
+      .folder {
+        width: 56px; height: 56px; border-radius: 8px; flex: none;
+        background: #e5e7eb; display: grid; place-items: center; font-size: 24px;
+      }
+      .option .strong { display: block; font-weight: 600; }
+      .option .meta { display: block; opacity: 0.6; font-size: 12px; }
+      .cancel { margin-top: 12px; text-align: right; color: #6b7280; }
+
+      /* ------------------------------------------------- popup da extensão */
+
+      .popup {
+        position: absolute; top: -8px; right: 18px;
+        width: 330px; background: #ffffff; color: #111827;
+        border: 1px solid #e5e7eb; border-radius: 10px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.3);
+        padding: 12px;
+      }
+      .popup header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .popup h1 { font-size: 14px; margin: 0; }
+      .popup .btn {
+        border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280;
+        padding: 3px 8px; font-size: 12px;
+      }
+      .popup .summary { color: #6b7280; margin: 0 0 8px; font-size: 12px; }
+      .group {
+        border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; margin-bottom: 8px;
+      }
+      .group .url { color: #6b7280; font-size: 11px; margin: 0 0 6px; }
+      .group .row {
+        display: flex; align-items: center; gap: 6px; padding: 2px 0; font-size: 12px;
+      }
+      .group .row .fav { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+      .group .row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .group .row .go { color: #2563eb; }
+      .group .row .close { color: #b91c1c; }
+    </style>
+  </head>
+  <body>
+    <div class="caption">Paste a copied image straight into any upload field</div>
+
+    <div class="window">
+      <div class="tabstrip">
+        <div class="tab active">
+          <span class="fav a"><span class="dot"></span></span>
+          <span class="label">🔁 Project board — Tasks</span>
+        </div>
+        <div class="tab">
+          <span class="fav a"><span class="dot"></span></span>
+          <span class="label">🔁 Project board — Tasks</span>
+        </div>
+        <div class="tab">
+          <span class="fav b"></span>
+          <span class="label">Docs — Release notes</span>
+        </div>
+        <div class="tab">
+          <span class="fav c"></span>
+          <span class="label">Status page</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <span class="nav">‹ › ⟳</span>
+        <div class="omnibox">example.com/board/new-task</div>
+        <span class="ext-badge"><img class="ext-icon" src="../public/icon/48.png" alt="" /></span>
+      </div>
+
+      <div class="page">
+        <div class="composer">
+          <h3>New task</h3>
+          <div class="field">Describe what needs to happen…</div>
+          <span class="attach">📎 Attach image</span>
+        </div>
+
+        <div class="backdrop">
+          <div class="panel">
+            <div class="title">Attach image</div>
+            <div class="sub">There is an image in your clipboard.</div>
+
+            <div class="option focus">
+              <span class="thumb">PNG</span>
+              <span>
+                <span class="strong">Use the copied image</span>
+                <span class="meta">184 KB · image/png</span>
+              </span>
+            </div>
+
+            <div class="option">
+              <span class="folder">📁</span>
+              <span>
+                <span class="strong">Choose a file from your computer</span>
+                <span class="meta">Opens the usual dialog</span>
+              </span>
+            </div>
+
+            <div class="cancel">Cancel (Esc)</div>
+          </div>
+        </div>
+
+        <div class="popup">
+          <header>
+            <h1>Browser Utils</h1>
+            <span class="btn">Settings</span>
+          </header>
+          <p class="summary">1 group · 1 extra tab</p>
+          <div class="group">
+            <p class="url">https://example.com/board/tasks</p>
+            <div class="row">
+              <span class="fav a" style="background:#ea4335"></span>
+              <span class="name">Project board — Tasks</span>
+              <span class="go">Go</span>
+              <span class="close">Close</span>
+            </div>
+            <div class="row">
+              <span class="fav a" style="background:#ea4335"></span>
+              <span class="name">Project board — Tasks</span>
+              <span class="go">Go</span>
+              <span class="close">Close</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
