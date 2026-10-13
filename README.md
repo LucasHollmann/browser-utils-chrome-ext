@@ -5,6 +5,7 @@ Extensão Manifest V3 (Brave/Chrome) que identifica páginas duplicadas entre as
 - **Prefixo no título**: abas com a mesma URL (após normalização) ganham um prefixo configurável (`🔁 `). O prefixo some quando a aba deixa de ser duplicada.
 - **Tooltip em links**: ao passar o mouse sobre um link cuja página já está aberta em outra aba, aparece um aviso com o título daquela aba.
 - **Alt+clique / clique do meio** em um link já aberto focam a aba existente em vez de abrir outra.
+- **Badge no ícone**: o ícone da extensão mostra quantas abas são repetidas (ou seja, quantas dá para fechar).
 - **Popup**: lista os grupos de abas duplicadas (ir para / fechar) e liga/desliga cada funcionalidade.
 
 Stack: [WXT](https://wxt.dev) + React + TypeScript.
@@ -17,6 +18,7 @@ npm run dev      # build em watch + abre um navegador com a extensão carregada
 npm run build    # build de produção em .output/chrome-mv3
 npm test         # testes da normalização de URL
 npm run compile  # typecheck
+npm run icons    # regera public/icon/*.png a partir de scripts/gen-icons.mjs
 ```
 
 ## Carregar no Brave (modo desenvolvedor)
@@ -45,6 +47,7 @@ Por padrão a extensão não roda em janelas anônimas. Para testar esse cenári
 | [entrypoints/background.ts](entrypoints/background.ts) | Fonte da verdade: mapa `tabId → URL normalizada`, detecção de duplicatas, transmissão de estado. |
 | [entrypoints/content.tsx](entrypoints/content.tsx) | Prefixo no título + tooltip (Shadow DOM) + Alt/meio-clique. |
 | [entrypoints/popup/](entrypoints/popup/) | Popup React. |
+| [scripts/gen-icons.mjs](scripts/gen-icons.mjs) | Desenha os PNGs do ícone (sem dependências; `npm run icons`). |
 
 O background mantém o estado e, a cada mudança, envia a cada content script: se aquela aba é duplicada e a lista de URLs abertas (chave normalizada, título e `tabId`). Assim o tooltip responde ao hover sem ida e volta ao background. Como o service worker pode ser suspenso, o estado é reconstruído com `chrome.tabs.query({})` sempre que ele sobe e sempre que o popup pede os grupos.
 

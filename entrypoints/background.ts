@@ -145,8 +145,42 @@ export default defineBackground(() => {
     }, 80);
   }
 
+  // ------------------------------------------------------------------ badge
+
+  /**
+   * Mostra no ícone da extensão quantas abas são repetidas (ou seja, quantas
+   * poderiam ser fechadas). Vazio quando não há duplicatas.
+   */
+  async function updateBadge(groups: Map<string, TabRecord[]>): Promise<void> {
+    let extras = 0;
+    for (const list of groups.values()) {
+      if (list.length > 1) extras += list.length - 1;
+    }
+
+    const show = settings.badgeEnabled && extras > 0;
+    const text = show ? String(extras) : '';
+
+    try {
+      await browser.action.setBadgeText({ text });
+      if (show) {
+        await browser.action.setBadgeBackgroundColor({ color: '#dc2626' });
+        // Disponível a partir do Chrome 110; ignorado nas versões antigas.
+        await browser.action.setBadgeTextColor?.({ color: '#ffffff' });
+      }
+      await browser.action.setTitle({
+        title:
+          extras > 0
+            ? `Abas Duplicadas - ${extras} ${extras === 1 ? 'aba repetida' : 'abas repetidas'}`
+            : 'Abas Duplicadas - nenhuma duplicata',
+      });
+    } catch {
+      // A action pode não estar disponível enquanto o worker inicializa.
+    }
+  }
+
   async function broadcast(): Promise<void> {
     const groups = groupsByKey();
+    void updateBadge(groups);
     await Promise.all(
       [...tabs.values()].map((record) => {
         const duplicate = (groups.get(groupKey(record))?.length ?? 0) > 1;

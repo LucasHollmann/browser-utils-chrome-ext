@@ -10,6 +10,7 @@
     "zip": "wxt zip",
     "compile": "tsc --noEmit",
     "test": "vitest run",
+    "icons": "node scripts/gen-icons.mjs public/icon",
     "test:watch": "vitest",
     "postinstall": "wxt prepare"
   },

@@ -116,6 +116,15 @@ export function App() {
           <label className="row">
             <input
               type="checkbox"
+              checked={settings.badgeEnabled}
+              onChange={(event) => void patch({ badgeEnabled: event.target.checked })}
+            />
+            <span>Contador de abas repetidas no ícone da extensão</span>
+          </label>
+
+          <label className="row">
+            <input
+              type="checkbox"
               checked={settings.separateIncognito}
               onChange={(event) => void patch({ separateIncognito: event.target.checked })}
             />

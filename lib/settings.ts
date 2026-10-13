@@ -10,6 +10,8 @@ export interface Settings {
   tooltipEnabled: boolean;
   /** Alt+clique / clique do meio focam a aba existente. */
   focusExistingTabEnabled: boolean;
+  /** Mostra no ícone da extensão quantas abas estão repetidas. */
+  badgeEnabled: boolean;
   /** Não mistura abas anônimas com abas normais. */
   separateIncognito: boolean;
   /** Regras de normalização de URL. */
@@ -21,6 +23,7 @@ export const DEFAULT_SETTINGS: Settings = {
   titlePrefix: '🔁 ',
   tooltipEnabled: true,
   focusExistingTabEnabled: true,
+  badgeEnabled: true,
   separateIncognito: true,
   normalize: { ...DEFAULT_NORMALIZE_OPTIONS },
 };
