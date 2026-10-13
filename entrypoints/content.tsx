@@ -6,7 +6,20 @@ import {
   createTooltipStore,
   DuplicateTooltip,
 } from '@/components/DuplicateTooltip';
+import {
+  createFilePickerStore,
+  FilePickerOverlay,
+} from '@/components/FilePickerOverlay';
 import { anchorFromEvent, LinkHover } from '@/lib/link-hover';
+import {
+  acceptsImages,
+  assignFiles,
+  fieldLabel,
+  fileInputFromEvent,
+  matchesAccept,
+  readClipboardImage,
+  shouldIntercept,
+} from '@/lib/file-input';
 import { normalizeUrl } from '@/lib/normalize-url';
 import { FaviconBadger } from '@/lib/favicon-badge';
 import { TitlePrefixer } from '@/lib/title-prefix';
@@ -38,12 +51,13 @@ export default defineContentScript({
       }
     });
     const tooltipStore = createTooltipStore();
+    const filePickerStore = createFilePickerStore();
 
     // ------------------------------------------------------------- tooltip UI
 
     let root: Root | undefined;
     const ui = await createShadowRootUi(ctx, {
-      name: 'abas-duplicadas-tooltip',
+      name: 'browser-utils-tooltip',
       position: 'overlay',
       anchor: 'body',
       onMount(container) {
@@ -56,6 +70,24 @@ export default defineContentScript({
       },
     });
     ui.mount();
+
+    // ---------------------------------------------------- seleção de arquivo UI
+
+    let pickerRoot: Root | undefined;
+    const pickerUi = await createShadowRootUi(ctx, {
+      name: 'browser-utils-file-picker',
+      position: 'overlay',
+      anchor: 'body',
+      onMount(container) {
+        pickerRoot = createRoot(container);
+        pickerRoot.render(<FilePickerOverlay store={filePickerStore} />);
+      },
+      onRemove() {
+        pickerRoot?.unmount();
+        pickerRoot = undefined;
+      },
+    });
+    pickerUi.mount();
 
     // --------------------------------------------------------------- estado
 
@@ -181,40 +213,112 @@ export default defineContentScript({
       { capture: true },
     );
 
+    // ------------------------------------------- seleção rápida de arquivo
+
+    /** Inputs cujo próximo clique deve passar direto para o diálogo nativo. */
+    const bypass = new WeakSet<HTMLInputElement>();
+
+    /** Reabre o input sem cair de novo na interceptação. */
+    function browseNative(input: HTMLInputElement): void {
+      bypass.add(input);
+      input.click();
+    }
+
+    async function openPicker(input: HTMLInputElement): Promise<void> {
+      const clipboardFile = await readClipboardImage();
+      const usable =
+        clipboardFile && matchesAccept(input, clipboardFile) ? clipboardFile : null;
+
+      // Sem imagem para oferecer, o popup só atrapalharia: segue direto para o
+      // diálogo do sistema, como se nunca tivéssemos entrado no caminho.
+      if (!usable) {
+        browseNative(input);
+        return;
+      }
+
+      const previewUrl = URL.createObjectURL(usable);
+      const close = () => {
+        filePickerStore.hide();
+        input.focus({ preventScroll: true });
+      };
+
+      filePickerStore.set({
+        visible: true,
+        clipboardFile: usable,
+        previewUrl,
+        fieldLabel: fieldLabel(input),
+        onUseClipboard: () => {
+          assignFiles(input, [usable]);
+          close();
+        },
+        onBrowse: () => {
+          close();
+          browseNative(input);
+        },
+        onCancel: close,
+      });
+    }
+
+    ctx.addEventListener(
+      document,
+      'click',
+      (event) => {
+        if (!state?.filePickerEnabled) return;
+        if (event.defaultPrevented) return;
+
+        const input = fileInputFromEvent(event);
+        // Campo que não aceita imagem nunca passa por aqui: não há o que
+        // oferecer, e segurar o clique só arriscaria atrapalhar o site.
+        if (!input || !shouldIntercept(input) || !acceptsImages(input)) return;
+
+        // Fomos nós que pedimos este clique: deixa o diálogo abrir.
+        if (bypass.has(input)) {
+          bypass.delete(input);
+          return;
+        }
+
+        // Segura o diálogo nativo antes de qualquer await - depois seria tarde.
+        event.preventDefault();
+        event.stopPropagation();
+        void openPicker(input);
+      },
+      { capture: true },
+    );
+
     /**
      * Diagnóstico. No console da página, troque o contexto para a extensão
-     * ("Abas Duplicadas") e rode, por exemplo, __abasDuplicadas.abas().
+     * ("Browser Utils") e rode, por exemplo, __browserUtils.tabs().
      */
     Object.assign(globalThis, {
-      __abasDuplicadas: {
+      __browserUtils: {
         /** O estado recebido do background (null = nunca chegou). */
-        estado: () => state,
+        state: () => state,
         /** Chave normalizada desta página. */
-        chaveDaPagina: () => normalizeUrl(location.href, state?.normalize),
+        pageKey: () => normalizeUrl(location.href, state?.normalize),
         /** Chave de uma URL qualquer, com as regras atuais. */
-        chaveDe: (url: string) => normalizeUrl(url, state?.normalize),
+        keyFor: (url: string) => normalizeUrl(url, state?.normalize),
         /** As outras abas abertas, como o content script as conhece. */
-        abas: () =>
-          [...openByKey.entries()].map(([key, tab]) => ({ key, titulo: tab.title })),
+        tabs: () =>
+          [...openByKey.entries()].map(([key, tab]) => ({ key, title: tab.title })),
         /** O link sob o ponteiro agora e se ele bate com alguma aba. */
-        linkSobOMouse: () => {
+        linkUnderPointer: () => {
           const anchor = hover.anchor;
-          if (!anchor) return 'nenhum link sob o ponteiro';
+          if (!anchor) return 'no link under the pointer';
           return {
             href: anchor.href,
-            chave: normalizeUrl(anchor.href, state?.normalize),
-            abaCorrespondente: matchFor(anchor) ?? null,
+            key: normalizeUrl(anchor.href, state?.normalize),
+            matchingTab: matchFor(anchor) ?? null,
           };
         },
         /** Força o tooltip a aparecer: separa problema de desenho de match. */
-        testarTooltip: () => {
+        testTooltip: () => {
           tooltipStore.set({
             visible: true,
             x: 200,
             y: 200,
-            title: 'Tooltip de teste',
+            title: 'Test tooltip',
           });
-          return ui.mounted == null ? 'UI NÃO montada' : 'UI montada';
+          return ui.mounted == null ? 'UI NOT mounted' : 'UI mounted';
         },
       },
     });
@@ -224,6 +328,7 @@ export default defineContentScript({
       hover.cancel();
       prefixer.dispose();
       faviconBadger.dispose();
+      filePickerStore.hide();
     });
   },
 });

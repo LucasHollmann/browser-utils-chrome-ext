@@ -11,19 +11,19 @@ interface GroupsResponse {
 }
 
 const BADGE_STYLE_LABELS: Array<{ value: FaviconBadgeStyle; label: string }> = [
-  { value: 'dot', label: 'Ponto vermelho no canto' },
-  { value: 'count', label: 'Número de abas repetidas' },
-  { value: 'emoji', label: 'Emoji 🔁 no canto' },
-  { value: 'ring', label: 'Moldura vermelha em volta' },
-  { value: 'dim', label: 'Favicon acinzentado + ponto' },
+  { value: 'dot', label: 'Red dot in the corner' },
+  { value: 'count', label: 'Number of repeated tabs' },
+  { value: 'emoji', label: '🔁 emoji in the corner' },
+  { value: 'ring', label: 'Red ring around it' },
+  { value: 'dim', label: 'Dimmed favicon + dot' },
 ];
 
 const NORMALIZE_LABELS: Array<{ key: keyof NormalizeOptions; label: string }> = [
-  { key: 'ignoreHash', label: 'Ignorar fragmento (#...)' },
-  { key: 'ignoreTrailingSlash', label: 'Ignorar barra final' },
-  { key: 'stripTrackingParams', label: 'Ignorar parâmetros de rastreamento' },
-  { key: 'ignoreProtocol', label: 'http e https são a mesma coisa' },
-  { key: 'ignoreWww', label: 'www. é a mesma coisa' },
+  { key: 'ignoreHash', label: 'Ignore the fragment (#...)' },
+  { key: 'ignoreTrailingSlash', label: 'Ignore the trailing slash' },
+  { key: 'stripTrackingParams', label: 'Ignore tracking parameters' },
+  { key: 'ignoreProtocol', label: 'http and https are the same' },
+  { key: 'ignoreWww', label: 'www. is the same' },
 ];
 
 export function App() {
@@ -70,134 +70,161 @@ export function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>Abas duplicadas</h1>
+        <h1>Browser Utils</h1>
         <button
           type="button"
           className="icon-button"
           onClick={() => setShowOptions((value) => !value)}
           aria-expanded={showOptions}
         >
-          {showOptions ? 'Fechar ajustes' : 'Ajustes'}
+          {showOptions ? 'Close settings' : 'Settings'}
         </button>
       </header>
 
       {showOptions && (
-        <section className="options">
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={settings.titlePrefixEnabled}
-              onChange={(event) => void patch({ titlePrefixEnabled: event.target.checked })}
-            />
-            <span>Prefixo no título das abas duplicadas</span>
-          </label>
+        <div className="options">
+          <section className="option-group">
+            <h2>Duplicate tabs</h2>
 
-          <label className="row indent">
-            <span>Prefixo</span>
-            <input
-              type="text"
-              className="text-input"
-              value={settings.titlePrefix}
-              onChange={(event) => void patch({ titlePrefix: event.target.value })}
-            />
-          </label>
-
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={settings.faviconBadgeEnabled}
-              onChange={(event) =>
-                void patch({ faviconBadgeEnabled: event.target.checked })
-              }
-            />
-            <span>Marcar o ícone da aba duplicada</span>
-          </label>
-
-          <label className="row indent">
-            <span>Estilo</span>
-            <select
-              className="text-input"
-              value={settings.faviconBadgeStyle}
-              disabled={!settings.faviconBadgeEnabled}
-              onChange={(event) =>
-                void patch({
-                  faviconBadgeStyle: event.target.value as FaviconBadgeStyle,
-                })
-              }
-            >
-              {BADGE_STYLE_LABELS.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={settings.tooltipEnabled}
-              onChange={(event) => void patch({ tooltipEnabled: event.target.checked })}
-            />
-            <span>Tooltip ao passar o mouse em links já abertos</span>
-          </label>
-
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={settings.focusExistingTabEnabled}
-              onChange={(event) =>
-                void patch({ focusExistingTabEnabled: event.target.checked })
-              }
-            />
-            <span>Alt+clique / clique do meio focam a aba existente</span>
-          </label>
-
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={settings.badgeEnabled}
-              onChange={(event) => void patch({ badgeEnabled: event.target.checked })}
-            />
-            <span>Contador de abas repetidas no ícone da extensão</span>
-          </label>
-
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={settings.separateIncognito}
-              onChange={(event) => void patch({ separateIncognito: event.target.checked })}
-            />
-            <span>Não misturar abas anônimas com normais</span>
-          </label>
-
-          <h2>Quando duas URLs são a mesma página</h2>
-          {NORMALIZE_LABELS.map(({ key, label }) => (
-            <label className="row" key={key}>
+            <label className="row">
               <input
                 type="checkbox"
-                checked={settings.normalize[key]}
+                checked={settings.titlePrefixEnabled}
                 onChange={(event) =>
-                  void patch({
-                    normalize: { ...settings.normalize, [key]: event.target.checked },
-                  })
+                  void patch({ titlePrefixEnabled: event.target.checked })
                 }
               />
-              <span>{label}</span>
+              <span>Prefix the title of duplicate tabs</span>
             </label>
-          ))}
-        </section>
+
+            <label className="row indent">
+              <span>Prefix</span>
+              <input
+                type="text"
+                className="text-input"
+                value={settings.titlePrefix}
+                onChange={(event) => void patch({ titlePrefix: event.target.value })}
+              />
+            </label>
+
+            <label className="row">
+              <input
+                type="checkbox"
+                checked={settings.faviconBadgeEnabled}
+                onChange={(event) =>
+                  void patch({ faviconBadgeEnabled: event.target.checked })
+                }
+              />
+              <span>Mark the duplicate tab&apos;s icon</span>
+            </label>
+
+            <label className="row indent">
+              <span>Style</span>
+              <select
+                className="text-input"
+                value={settings.faviconBadgeStyle}
+                disabled={!settings.faviconBadgeEnabled}
+                onChange={(event) =>
+                  void patch({
+                    faviconBadgeStyle: event.target.value as FaviconBadgeStyle,
+                  })
+                }
+              >
+                {BADGE_STYLE_LABELS.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="row">
+              <input
+                type="checkbox"
+                checked={settings.tooltipEnabled}
+                onChange={(event) => void patch({ tooltipEnabled: event.target.checked })}
+              />
+              <span>Tooltip when hovering a link already open</span>
+            </label>
+
+            <label className="row">
+              <input
+                type="checkbox"
+                checked={settings.focusExistingTabEnabled}
+                onChange={(event) =>
+                  void patch({ focusExistingTabEnabled: event.target.checked })
+                }
+              />
+              <span>Alt+click / middle click focus the existing tab</span>
+            </label>
+
+            <label className="row">
+              <input
+                type="checkbox"
+                checked={settings.badgeEnabled}
+                onChange={(event) => void patch({ badgeEnabled: event.target.checked })}
+              />
+              <span>Count repeated tabs on the extension icon</span>
+            </label>
+
+            <label className="row">
+              <input
+                type="checkbox"
+                checked={settings.separateIncognito}
+                onChange={(event) =>
+                  void patch({ separateIncognito: event.target.checked })
+                }
+              />
+              <span>Keep incognito tabs apart from normal ones</span>
+            </label>
+
+            <h3>When two URLs are the same page</h3>
+            {NORMALIZE_LABELS.map(({ key, label }) => (
+              <label className="row" key={key}>
+                <input
+                  type="checkbox"
+                  checked={settings.normalize[key]}
+                  onChange={(event) =>
+                    void patch({
+                      normalize: { ...settings.normalize, [key]: event.target.checked },
+                    })
+                  }
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </section>
+
+          <section className="option-group">
+            <h2>File uploads</h2>
+
+            <label className="row">
+              <input
+                type="checkbox"
+                checked={settings.filePickerEnabled}
+                onChange={(event) =>
+                  void patch({ filePickerEnabled: event.target.checked })
+                }
+              />
+              <span>Quick pick when uploading a file</span>
+            </label>
+            <p className="hint">
+              On fields that take images, clicking opens a popup to paste the image from
+              your clipboard. With nothing copied, the system dialog opens as usual.
+            </p>
+          </section>
+        </div>
       )}
 
       {loading ? (
-        <p className="empty">Carregando…</p>
+        <p className="empty">Loading…</p>
       ) : groups.length === 0 ? (
-        <p className="empty">Nenhuma aba duplicada. 🎉</p>
+        <p className="empty">No duplicate tabs. 🎉</p>
       ) : (
         <>
           <p className="summary">
-            {groups.length} {groups.length === 1 ? 'grupo' : 'grupos'} · {totalExtras}{' '}
-            {totalExtras === 1 ? 'aba extra' : 'abas extras'}
+            {groups.length} {groups.length === 1 ? 'group' : 'groups'} · {totalExtras}{' '}
+            {totalExtras === 1 ? 'extra tab' : 'extra tabs'}
           </p>
           <ul className="groups">
             {groups.map((group) => (
@@ -221,14 +248,14 @@ export function App() {
                         className="link-button"
                         onClick={() => void goToTab(tab.tabId, tab.windowId)}
                       >
-                        Ir
+                        Go
                       </button>
                       <button
                         type="button"
                         className="link-button danger"
                         onClick={() => void closeTab(tab.tabId)}
                       >
-                        Fechar
+                        Close
                       </button>
                     </li>
                   ))}

@@ -11,6 +11,8 @@ export interface Settings {
   tooltipEnabled: boolean;
   /** Alt+clique / clique do meio focam a aba existente. */
   focusExistingTabEnabled: boolean;
+  /** Clique em campo de arquivo abre a seleção rápida (imagem copiada / diálogo). */
+  filePickerEnabled: boolean;
   /** Mostra no ícone da extensão quantas abas estão repetidas. */
   badgeEnabled: boolean;
   /** Marca o favicon das abas duplicadas com um ponto de notificação. */
@@ -28,6 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   titlePrefix: '🔁 ',
   tooltipEnabled: true,
   focusExistingTabEnabled: true,
+  filePickerEnabled: true,
   badgeEnabled: true,
   faviconBadgeEnabled: true,
   faviconBadgeStyle: 'dot',

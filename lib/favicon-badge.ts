@@ -8,7 +8,7 @@
  */
 
 const SIZE = 32;
-const MARKER = '__abasDuplicadas';
+const MARKER = '__browserUtils';
 
 /** Estilos de marcação do favicon. */
 export const FAVICON_BADGE_STYLES = ['dot', 'count', 'emoji', 'ring', 'dim'] as const;

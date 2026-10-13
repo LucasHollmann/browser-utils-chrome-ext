@@ -68,7 +68,7 @@ export function DuplicateTooltip({ store }: { store: TooltipStore }) {
 
   return (
     <div style={style} role="tooltip">
-      <div style={{ opacity: 0.75, marginBottom: 2 }}>🔁 Esta página já está aberta</div>
+      <div style={{ opacity: 0.75, marginBottom: 2 }}>🔁 This page is already open</div>
       <div
         style={{
           fontWeight: 600,

@@ -1,6 +1,6 @@
 {
   "name": "browser-utils-chrome-ext",
-  "description": "Detecta abas duplicadas: prefixo no título e tooltip em links já abertos.",
+  "description": "Browser utils: duplicate tab alerts and a quick file picker.",
   "private": true,
   "version": "0.1.0",
   "type": "module",

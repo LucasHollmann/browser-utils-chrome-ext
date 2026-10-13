@@ -116,6 +116,7 @@ export default defineBackground(() => {
       faviconBadgeStyle: settings.faviconBadgeStyle,
       tooltipEnabled: settings.tooltipEnabled,
       focusExistingTabEnabled: settings.focusExistingTabEnabled,
+      filePickerEnabled: settings.filePickerEnabled,
       normalize: settings.normalize,
       openTabs: settings.tooltipEnabled ? visibleTabsFor(record) : [],
     };
@@ -174,8 +175,8 @@ export default defineBackground(() => {
       await browser.action.setTitle({
         title:
           extras > 0
-            ? `Abas Duplicadas - ${extras} ${extras === 1 ? 'aba repetida' : 'abas repetidas'}`
-            : 'Abas Duplicadas - nenhuma duplicata',
+            ? `Browser Utils - ${extras} repeated ${extras === 1 ? 'tab' : 'tabs'}`
+            : 'Browser Utils - no duplicate tabs',
       });
     } catch {
       // A action pode não estar disponível enquanto o worker inicializa.

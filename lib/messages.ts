@@ -36,6 +36,7 @@ export interface TabStateMessage {
   faviconBadgeStyle: FaviconBadgeStyle;
   tooltipEnabled: boolean;
   focusExistingTabEnabled: boolean;
+  filePickerEnabled: boolean;
   normalize: NormalizeOptions;
   /** Abas abertas visíveis para esta aba, exceto ela mesma. */
   openTabs: OpenTab[];

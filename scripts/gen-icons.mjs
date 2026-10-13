@@ -1,6 +1,6 @@
 // Gera os PNGs do ícone da extensão sem dependências externas.
-// Desenho: duas "abas" arredondadas sobrepostas (ideia de duplicata) sobre
-// um quadrado arredondado indigo.
+// Desenho: uma janela de navegador com uma engrenagem no canto, sobre um
+// quadrado arredondado indigo - as utilidades do navegador.
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -23,32 +23,61 @@ function sdRoundRect(px, py, x0, y0, x1, y1, r) {
   return outside + Math.min(Math.max(dx, dy), 0) - r;
 }
 
+/** Dentro de um círculo? */
+function inCircle(x, y, cx, cy, r) {
+  return Math.hypot(x - cx, y - cy) < r;
+}
+
+/**
+ * Dentro de uma engrenagem?
+ *
+ * Disco de raio `root` com `teeth` dentes até `outer` (metade de cada período
+ * angular é dente, metade é vale) e um furo central de raio `hole`.
+ */
+function inGear(x, y, cx, cy, outer, root, teeth, hole) {
+  const dx = x - cx;
+  const dy = y - cy;
+  const d = Math.hypot(dx, dy);
+  if (d >= outer || d < hole) return false;
+  if (d <= root) return true;
+  return Math.cos(Math.atan2(dy, dx) * teeth) > 0;
+}
+
+/** Mistura de duas cores, `t` em 0..1. */
+function mix(a, b, t) {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
+const TOOLBAR = mix(BG, WHITE, 0.4);
+
 /** Cor (r,g,b,a) de um ponto do desenho, em coordenadas 0..1. */
 function sample(x, y) {
   let color = [0, 0, 0];
   let alpha = 0;
 
-  const paint = (inside, rgb, strength = 1) => {
+  const paint = (inside, rgb) => {
     if (!inside) return;
     color = rgb;
-    alpha = strength;
+    alpha = 1;
   };
 
   // Fundo: quadrado arredondado.
   paint(sdRoundRect(x, y, 0.03, 0.03, 0.97, 0.97, 0.22) < 0, BG);
-  // Aba de trás (branco suave).
-  if (sdRoundRect(x, y, 0.2, 0.16, 0.63, 0.59, 0.09) < 0) {
-    color = [
-      Math.round(BG[0] + (WHITE[0] - BG[0]) * 0.55),
-      Math.round(BG[1] + (WHITE[1] - BG[1]) * 0.55),
-      Math.round(BG[2] + (WHITE[2] - BG[2]) * 0.55),
-    ];
-    alpha = 1;
-  }
-  // Recorte indigo em volta da aba da frente, para separar as duas.
-  paint(sdRoundRect(x, y, 0.33, 0.33, 0.85, 0.85, 0.12) < 0, BG);
-  // Aba da frente (branco sólido).
-  paint(sdRoundRect(x, y, 0.38, 0.38, 0.8, 0.8, 0.09) < 0, WHITE);
+
+  // Janela do navegador.
+  paint(sdRoundRect(x, y, 0.14, 0.18, 0.76, 0.68, 0.08) < 0, WHITE);
+  // Barra de ferramentas, com a aba ativa destacada à esquerda.
+  paint(sdRoundRect(x, y, 0.14, 0.18, 0.76, 0.33, 0.08) < 0, TOOLBAR);
+  paint(sdRoundRect(x, y, 0.19, 0.21, 0.42, 0.33, 0.03) < 0, WHITE);
+
+  // Recorte indigo em volta da engrenagem, para separá-la da janela.
+  paint(inCircle(x, y, 0.71, 0.72, 0.31), BG);
+  // Engrenagem.
+  paint(inGear(x, y, 0.71, 0.72, 0.27, 0.215, 8, 0.085), WHITE);
 
   return [color[0], color[1], color[2], Math.round(alpha * 255)];
 }

@@ -1,6 +1,8 @@
-# Abas Duplicadas
+# Browser Utils
 
-Extensão Manifest V3 (Brave/Chrome) que identifica páginas duplicadas entre as abas abertas.
+Extensão Manifest V3 (Brave/Chrome) com utilidades do dia a dia (a interface da extensão é em inglês; o código e esta documentação, em português). Hoje são duas frentes: detectar páginas duplicadas entre as abas abertas e acelerar o envio de arquivos.
+
+## Abas duplicadas
 
 - **Prefixo no título**: abas com a mesma URL (após normalização) ganham um prefixo configurável (`🔁 `). O prefixo some quando a aba deixa de ser duplicada.
 - **Tooltip em links**: ao passar o mouse sobre um link cuja página já está aberta em outra aba, aparece um aviso com o título daquela aba.
@@ -8,6 +10,10 @@ Extensão Manifest V3 (Brave/Chrome) que identifica páginas duplicadas entre as
 - **Marca no favicon**: a aba duplicada ganha uma marcação sobre o próprio favicon, visível na barra de abas. Cinco estilos no popup: ponto vermelho, número de abas repetidas, emoji 🔁, moldura vermelha ou favicon acinzentado.
 - **Badge no ícone da extensão**: mostra quantas abas são repetidas (ou seja, quantas dá para fechar).
 - **Popup**: lista os grupos de abas duplicadas (ir para / fechar) e liga/desliga cada funcionalidade.
+
+## Envio de arquivos
+
+- **Seleção rápida de arquivo**: ao clicar em um campo de upload que aceite imagens, se houver uma imagem na área de transferência a extensão oferece um popup para colá-la direto, com a opção de abrir o diálogo normal. Em qualquer outro caso — campo que não aceita imagem, área de transferência sem imagem, ou imagem de um tipo que aquele campo recusa — o diálogo do sistema abre como sempre, sem popup nenhum. Dá para desligar nos ajustes do popup.
 
 Stack: [WXT](https://wxt.dev) + React + TypeScript.
 
@@ -46,6 +52,8 @@ Por padrão a extensão não roda em janelas anônimas. Para testar esse cenári
 | [lib/messages.ts](lib/messages.ts) | Contrato de mensagens entre background, content script e popup. |
 | [lib/title-prefix.ts](lib/title-prefix.ts) | Aplica/remove o prefixo no `<title>` com `MutationObserver`. |
 | [lib/favicon-badge.ts](lib/favicon-badge.ts) | Redesenha o favicon da aba com a marcação escolhida. |
+| [lib/file-input.ts](lib/file-input.ts) | Seleção rápida de arquivo: acha o `<input type="file">` do clique, lê a imagem da área de transferência e a entrega ao site. |
+| [components/FilePickerOverlay.tsx](components/FilePickerOverlay.tsx) | O popup de seleção rápida (Shadow DOM). |
 | [entrypoints/background.ts](entrypoints/background.ts) | Fonte da verdade: mapa `tabId → URL normalizada`, detecção de duplicatas, transmissão de estado. |
 | [entrypoints/content.tsx](entrypoints/content.tsx) | Prefixo no título + ponto no favicon + tooltip (Shadow DOM) + Alt/meio-clique. |
 | [entrypoints/popup/](entrypoints/popup/) | Popup React. |
@@ -53,10 +61,12 @@ Por padrão a extensão não roda em janelas anônimas. Para testar esse cenári
 
 O background mantém o estado e, a cada mudança, envia a cada content script: se aquela aba é duplicada e a lista de URLs abertas (chave normalizada, título e `tabId`). Assim o tooltip responde ao hover sem ida e volta ao background. Como o service worker pode ser suspenso, o estado é reconstruído com `chrome.tabs.query({})` sempre que ele sobe e sempre que o popup pede os grupos.
 
-Permissões usadas: `tabs`, `storage` e `host_permissions: ["<all_urls>"]`.
+Permissões usadas: `tabs`, `storage`, `clipboardRead` e `host_permissions: ["<all_urls>"]`.
 
 ## Limitações conhecidas
 
 - Abas suspensas/descartadas pela economia de memória do Brave não executam content script: elas **contam** como duplicatas para as outras abas, mas só recebem o prefixo quando são reativadas (o content script pede o estado ao voltar).
 - Páginas restritas (`brave://`, `chrome://`, Web Store) não aceitam content script: entram na contagem de duplicatas, mas não recebem prefixo, ponto no favicon nem tooltip.
+- A seleção rápida de arquivo não cobre sites que usam `showOpenFilePicker()` (File System Access API) em vez de um `<input type="file">`: lá o diálogo é aberto sem passar por um elemento que dê para interceptar.
+- O Chrome entrega só o item atual da área de transferência — não existe histórico, então a lista de "arquivos recentes" do Opera GX não tem equivalente aqui.
 - O ponto no favicon depende de a página ter um favicon acessível. Quando ele não carrega (formato exótico, 404), a extensão desenha um quadrado neutro com o ponto em vez de deixar a aba sem ícone.

@@ -5,9 +5,10 @@ export default defineConfig({
   // Imports explícitos em vez de auto-imports — facilita ler o código fora do WXT.
   imports: false,
   manifest: {
-    name: 'Abas Duplicadas',
-    description: 'Marca abas duplicadas no título e avisa ao passar o mouse em links já abertos.',
-    permissions: ['tabs', 'storage'],
+    name: 'Browser Utils',
+    description:
+      'Everyday browser utilities: duplicate tab alerts and a quick file picker that pastes the image from your clipboard.',
+    permissions: ['tabs', 'storage', 'clipboardRead'],
     host_permissions: ['<all_urls>'],
   },
 });
