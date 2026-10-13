@@ -6,6 +6,7 @@ import {
   createTooltipStore,
   DuplicateTooltip,
 } from '@/components/DuplicateTooltip';
+import { anchorFromEvent, LinkHover } from '@/lib/link-hover';
 import { normalizeUrl } from '@/lib/normalize-url';
 import { FaviconBadger } from '@/lib/favicon-badge';
 import { TitlePrefixer } from '@/lib/title-prefix';
@@ -99,17 +100,6 @@ export default defineContentScript({
 
     // --------------------------------------------------------------- tooltip
 
-    let hoverTimer: ReturnType<typeof setTimeout> | undefined;
-    let pointer = { x: 0, y: 0 };
-    let hoveredAnchor: HTMLAnchorElement | null = null;
-
-    function cancelHover(): void {
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        hoverTimer = undefined;
-      }
-    }
-
     /** A aba já aberta correspondente a este link, se houver. */
     function matchFor(anchor: HTMLAnchorElement): OpenTab | undefined {
       if (!state?.tooltipEnabled) return undefined;
@@ -123,72 +113,20 @@ export default defineContentScript({
       return openByKey.get(key);
     }
 
-    /**
-     * O <a> por baixo do ponteiro.
-     *
-     * Usa composedPath() porque sites feitos com web components (YouTube,
-     * Reddit, GitHub) montam os links dentro de shadow roots: nesses casos o
-     * event.target que chega ao document é o host do shadow root, e um
-     * closest() nele nunca encontraria o <a>.
-     */
-    function anchorFromEvent(event: Event): HTMLAnchorElement | null {
-      for (const node of event.composedPath()) {
-        if (node instanceof HTMLAnchorElement && node.hasAttribute('href')) {
-          return node;
-        }
-      }
-      const target = event.target;
-      return target instanceof Element ? target.closest('a[href]') : null;
-    }
+    const hover = new LinkHover<OpenTab>({
+      delayMs: HOVER_DELAY_MS,
+      lookup: matchFor,
+      show: (match, x, y) => tooltipStore.set({ visible: true, x, y, title: match.title }),
+      hide: () => tooltipStore.hide(),
+    });
 
     // Delegação: um único listener no document cobre links adicionados
     // dinamicamente, sem precisar observar o DOM.
-    ctx.addEventListener(document, 'mouseover', (event) => {
-      const anchor = anchorFromEvent(event);
-      if (anchor === hoveredAnchor) return;
+    ctx.addEventListener(document, 'mouseover', hover.handleMouseOver);
+    ctx.addEventListener(document, 'mousemove', hover.handleMouseMove);
+    ctx.addEventListener(document, 'mouseout', hover.handleMouseOut);
 
-      // Trocou de link, ou saiu de um link para fora dele: o mouseover do
-      // novo elemento já serve de "saída" do anterior.
-      hoveredAnchor = anchor;
-      cancelHover();
-      tooltipStore.hide();
-      if (!anchor) return;
-
-      const match = matchFor(anchor);
-      if (!match) return;
-
-      hoverTimer = setTimeout(() => {
-        hoverTimer = undefined;
-        // O ponteiro pode ter saído do link durante o debounce.
-        if (hoveredAnchor !== anchor) return;
-        tooltipStore.set({
-          visible: true,
-          x: pointer.x,
-          y: pointer.y,
-          title: match.title,
-        });
-      }, HOVER_DELAY_MS);
-    });
-
-    ctx.addEventListener(document, 'mousemove', (event) => {
-      pointer = { x: event.clientX, y: event.clientY };
-    });
-
-    ctx.addEventListener(document, 'mouseout', (event) => {
-      if (!hoveredAnchor) return;
-      // Sair para fora da janela (relatedTarget nulo). Trocar de elemento
-      // dentro da página é tratado pelo mouseover do elemento novo.
-      if (event.relatedTarget !== null) return;
-      hoveredAnchor = null;
-      cancelHover();
-      tooltipStore.hide();
-    });
-
-    const hideAll = () => {
-      hoveredAnchor = null;
-      cancelHover();
-      tooltipStore.hide();
-    };
+    const hideAll = hover.reset;
 
     ctx.addEventListener(window, 'scroll', hideAll, { passive: true });
     ctx.addEventListener(window, 'blur', hideAll);
@@ -244,25 +182,46 @@ export default defineContentScript({
     );
 
     /**
-     * Diagnóstico: rode __abasDuplicadas() no console da página, com o
-     * contexto do console trocado para a extensão. Mostra se o estado chegou
-     * do background e quais URLs ele conhece.
+     * Diagnóstico. No console da página, troque o contexto para a extensão
+     * ("Abas Duplicadas") e rode, por exemplo, __abasDuplicadas.abas().
      */
     Object.assign(globalThis, {
-      __abasDuplicadas: () => ({
-        estado: state,
-        tooltipMontado: ui.mounted != null,
-        abasConhecidas: [...openByKey.entries()].map(([key, tab]) => ({
-          key,
-          titulo: tab.title,
-        })),
-        chaveDestaPagina: normalizeUrl(location.href, state?.normalize),
-      }),
+      __abasDuplicadas: {
+        /** O estado recebido do background (null = nunca chegou). */
+        estado: () => state,
+        /** Chave normalizada desta página. */
+        chaveDaPagina: () => normalizeUrl(location.href, state?.normalize),
+        /** Chave de uma URL qualquer, com as regras atuais. */
+        chaveDe: (url: string) => normalizeUrl(url, state?.normalize),
+        /** As outras abas abertas, como o content script as conhece. */
+        abas: () =>
+          [...openByKey.entries()].map(([key, tab]) => ({ key, titulo: tab.title })),
+        /** O link sob o ponteiro agora e se ele bate com alguma aba. */
+        linkSobOMouse: () => {
+          const anchor = hover.anchor;
+          if (!anchor) return 'nenhum link sob o ponteiro';
+          return {
+            href: anchor.href,
+            chave: normalizeUrl(anchor.href, state?.normalize),
+            abaCorrespondente: matchFor(anchor) ?? null,
+          };
+        },
+        /** Força o tooltip a aparecer: separa problema de desenho de match. */
+        testarTooltip: () => {
+          tooltipStore.set({
+            visible: true,
+            x: 200,
+            y: 200,
+            title: 'Tooltip de teste',
+          });
+          return ui.mounted == null ? 'UI NÃO montada' : 'UI montada';
+        },
+      },
     });
 
     // Extensão recarregada/atualizada: devolve o título ao original.
     ctx.onInvalidated(() => {
-      cancelHover();
+      hover.cancel();
       prefixer.dispose();
       faviconBadger.dispose();
     });
