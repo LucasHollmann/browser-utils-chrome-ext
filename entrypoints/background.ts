@@ -104,13 +104,16 @@ export default defineBackground(() => {
     return result;
   }
 
-  function buildState(record: TabRecord, duplicate: boolean): TabStateMessage {
+  /** `count` = quantas abas estão nesta mesma página, incluindo a própria. */
+  function buildState(record: TabRecord, count: number): TabStateMessage {
     return {
       type: 'tab-state',
-      isDuplicate: duplicate,
+      isDuplicate: count > 1,
+      duplicateCount: count,
       titlePrefixEnabled: settings.titlePrefixEnabled,
       titlePrefix: settings.titlePrefix,
       faviconBadgeEnabled: settings.faviconBadgeEnabled,
+      faviconBadgeStyle: settings.faviconBadgeStyle,
       tooltipEnabled: settings.tooltipEnabled,
       focusExistingTabEnabled: settings.focusExistingTabEnabled,
       normalize: settings.normalize,
@@ -118,11 +121,11 @@ export default defineBackground(() => {
     };
   }
 
-  async function sendState(record: TabRecord, duplicate: boolean): Promise<void> {
+  async function sendState(record: TabRecord, count: number): Promise<void> {
     // Páginas internas não executam content script - ignorar sem erro.
     if (isRestrictedUrl(record.url)) return;
 
-    const message = buildState(record, duplicate);
+    const message = buildState(record, count);
     const fingerprint = JSON.stringify(message);
     if (lastSentState.get(record.tabId) === fingerprint) return;
 
@@ -184,8 +187,8 @@ export default defineBackground(() => {
     void updateBadge(groups);
     await Promise.all(
       [...tabs.values()].map((record) => {
-        const duplicate = (groups.get(groupKey(record))?.length ?? 0) > 1;
-        return sendState(record, duplicate);
+        const count = groups.get(groupKey(record))?.length ?? 1;
+        return sendState(record, count);
       }),
     );
   }
@@ -271,8 +274,8 @@ export default defineBackground(() => {
           return;
         }
         const groups = groupsByKey();
-        const duplicate = (groups.get(groupKey(record))?.length ?? 0) > 1;
-        const state = buildState(record, duplicate);
+        const count = groups.get(groupKey(record))?.length ?? 1;
+        const state = buildState(record, count);
         lastSentState.set(tabId, JSON.stringify(state));
         sendResponse(state);
       })();

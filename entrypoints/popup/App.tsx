@@ -3,11 +3,20 @@ import { browser } from 'wxt/browser';
 import type { DuplicateGroup } from '@/lib/messages';
 import { DEFAULT_SETTINGS, saveSettings, type Settings } from '@/lib/settings';
 import type { NormalizeOptions } from '@/lib/normalize-url';
+import type { FaviconBadgeStyle } from '@/lib/favicon-badge';
 
 interface GroupsResponse {
   groups: DuplicateGroup[];
   settings: Settings;
 }
+
+const BADGE_STYLE_LABELS: Array<{ value: FaviconBadgeStyle; label: string }> = [
+  { value: 'dot', label: 'Ponto vermelho no canto' },
+  { value: 'count', label: 'Número de abas repetidas' },
+  { value: 'emoji', label: 'Emoji 🔁 no canto' },
+  { value: 'ring', label: 'Moldura vermelha em volta' },
+  { value: 'dim', label: 'Favicon acinzentado + ponto' },
+];
 
 const NORMALIZE_LABELS: Array<{ key: keyof NormalizeOptions; label: string }> = [
   { key: 'ignoreHash', label: 'Ignorar fragmento (#...)' },
@@ -101,7 +110,27 @@ export function App() {
                 void patch({ faviconBadgeEnabled: event.target.checked })
               }
             />
-            <span>Ponto de notificação no ícone da aba duplicada</span>
+            <span>Marcar o ícone da aba duplicada</span>
+          </label>
+
+          <label className="row indent">
+            <span>Estilo</span>
+            <select
+              className="text-input"
+              value={settings.faviconBadgeStyle}
+              disabled={!settings.faviconBadgeEnabled}
+              onChange={(event) =>
+                void patch({
+                  faviconBadgeStyle: event.target.value as FaviconBadgeStyle,
+                })
+              }
+            >
+              {BADGE_STYLE_LABELS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="row">

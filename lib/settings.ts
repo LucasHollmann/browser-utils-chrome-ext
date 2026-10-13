@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_NORMALIZE_OPTIONS, type NormalizeOptions } from './normalize-url';
+import type { FaviconBadgeStyle } from './favicon-badge';
 
 export interface Settings {
   /** Liga o prefixo no título das abas duplicadas. */
@@ -14,6 +15,8 @@ export interface Settings {
   badgeEnabled: boolean;
   /** Marca o favicon das abas duplicadas com um ponto de notificação. */
   faviconBadgeEnabled: boolean;
+  /** Como essa marca é desenhada. */
+  faviconBadgeStyle: FaviconBadgeStyle;
   /** Não mistura abas anônimas com abas normais. */
   separateIncognito: boolean;
   /** Regras de normalização de URL. */
@@ -27,6 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   focusExistingTabEnabled: true,
   badgeEnabled: true,
   faviconBadgeEnabled: true,
+  faviconBadgeStyle: 'dot',
   separateIncognito: true,
   normalize: { ...DEFAULT_NORMALIZE_OPTIONS },
 };

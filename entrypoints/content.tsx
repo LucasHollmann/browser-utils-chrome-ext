@@ -64,7 +64,10 @@ export default defineContentScript({
         Boolean(next?.isDuplicate && next.titlePrefixEnabled),
         next?.titlePrefix ?? '',
       );
-      faviconBadger.update(Boolean(next?.isDuplicate && next.faviconBadgeEnabled));
+      faviconBadger.update(Boolean(next?.isDuplicate && next.faviconBadgeEnabled), {
+        style: next?.faviconBadgeStyle ?? 'dot',
+        count: next?.duplicateCount ?? 0,
+      });
 
       if (!next?.tooltipEnabled) tooltipStore.hide();
     }

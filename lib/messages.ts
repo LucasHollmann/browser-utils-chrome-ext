@@ -1,3 +1,4 @@
+import type { FaviconBadgeStyle } from './favicon-badge';
 import type { NormalizeOptions } from './normalize-url';
 
 /** Uma aba aberta, do ponto de vista do content script (dados mínimos). */
@@ -27,9 +28,12 @@ export interface TabStateMessage {
   type: 'tab-state';
   /** Esta aba tem pelo menos uma irmã com a mesma URL normalizada? */
   isDuplicate: boolean;
+  /** Quantas abas estão nesta mesma página (inclui a atual). */
+  duplicateCount: number;
   titlePrefixEnabled: boolean;
   titlePrefix: string;
   faviconBadgeEnabled: boolean;
+  faviconBadgeStyle: FaviconBadgeStyle;
   tooltipEnabled: boolean;
   focusExistingTabEnabled: boolean;
   normalize: NormalizeOptions;

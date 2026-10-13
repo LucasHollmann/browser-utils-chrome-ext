@@ -2,13 +2,23 @@
  * Marca o favicon da aba com um ponto de notificação enquanto ela for duplicada.
  *
  * O favicon original é baixado pelo background (que tem host_permissions e não
- * esbarra em CORS), redesenhado num canvas com o ponto por cima, e instalado
+ * esbarra em CORS), redesenhado num canvas com a marcação por cima, e instalado
  * como <link rel="icon"> em data: URL. Ao deixar de ser duplicada, os <link>
  * originais voltam exatamente como estavam.
  */
 
 const SIZE = 32;
 const MARKER = '__abasDuplicadas';
+
+/** Estilos de marcação do favicon. */
+export const FAVICON_BADGE_STYLES = ['dot', 'count', 'emoji', 'ring', 'dim'] as const;
+export type FaviconBadgeStyle = (typeof FAVICON_BADGE_STYLES)[number];
+
+export interface BadgeRequest {
+  style: FaviconBadgeStyle;
+  /** Quantas abas estão nesta mesma página (inclui a atual). */
+  count: number;
+}
 
 export type FaviconFetcher = (url: string) => Promise<string | null>;
 
@@ -23,18 +33,34 @@ export class FaviconBadger {
   /** Invalida resultados assíncronos de um estado que já mudou. */
   private generation = 0;
   private reapplyTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Estilo + contagem já aplicados, para recompor só quando mudarem. */
+  private request: BadgeRequest = { style: 'dot', count: 0 };
 
   constructor(private readonly fetchIcon: FaviconFetcher) {
     this.observer = new MutationObserver(() => this.onHeadMutated());
   }
 
-  update(wanted: boolean): void {
-    if (wanted === this.wanted) return;
+  update(wanted: boolean, request: BadgeRequest): void {
+    const changed =
+      wanted !== this.wanted ||
+      request.style !== this.request.style ||
+      // A contagem só muda o desenho no estilo numérico.
+      (request.style === 'count' && request.count !== this.request.count);
+    if (!changed) return;
+
+    const wasWanted = this.wanted;
     this.wanted = wanted;
+    this.request = request;
     this.generation++;
 
-    if (wanted) void this.applyBadge(this.generation);
-    else this.restore();
+    if (!wanted) {
+      this.restore();
+      return;
+    }
+    // Mudança de estilo com o badge já instalado: refazer o desenho, mas
+    // manter os links originais guardados.
+    if (wasWanted) this.composed = null;
+    void this.applyBadge(this.generation);
   }
 
   dispose(): void {
@@ -53,7 +79,7 @@ export class FaviconBadger {
     if (!this.composed) {
       const source = await this.fetchIcon(sourceIconUrl());
       if (generation !== this.generation) return;
-      this.composed = await compose(source);
+      this.composed = await compose(source, this.request);
       if (generation !== this.generation || !this.composed) return;
     }
 
@@ -168,36 +194,35 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Favicon original + ponto de notificação, como data URL PNG. */
-export async function compose(source: string | null): Promise<string | null> {
+/** Favicon original + marcação de duplicata, como data URL PNG. */
+export async function compose(
+  source: string | null,
+  request: BadgeRequest,
+): Promise<string | null> {
   const canvas = document.createElement('canvas');
   canvas.width = SIZE;
   canvas.height = SIZE;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
+  // O anel ocupa a borda, então o favicon entra reduzido para não ser coberto.
+  const inset = request.style === 'ring' ? 4 : 0;
+
   let drew = false;
   if (source) {
     try {
       const image = await loadImage(source);
-      ctx.drawImage(image, 0, 0, SIZE, SIZE);
+      if (request.style === 'dim') ctx.filter = 'grayscale(1) opacity(0.45)';
+      ctx.drawImage(image, inset, inset, SIZE - inset * 2, SIZE - inset * 2);
+      ctx.filter = 'none';
       drew = true;
     } catch {
       // Favicon ausente, formato não suportado ou fetch bloqueado.
     }
   }
-  if (!drew) drawPlaceholder(ctx);
+  if (!drew) drawPlaceholder(ctx, inset);
 
-  // Ponto de notificação no canto superior direito, com anel claro em volta
-  // para destacar de favicons escuros.
-  ctx.beginPath();
-  ctx.arc(SIZE - 9, 9, 9, 0, Math.PI * 2);
-  ctx.fillStyle = '#ffffff';
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(SIZE - 9, 9, 7, 0, Math.PI * 2);
-  ctx.fillStyle = '#dc2626';
-  ctx.fill();
+  drawBadge(ctx, request);
 
   try {
     return canvas.toDataURL('image/png');
@@ -207,10 +232,79 @@ export async function compose(source: string | null): Promise<string | null> {
   }
 }
 
+const ACCENT = '#dc2626';
+
+function drawBadge(ctx: CanvasRenderingContext2D, request: BadgeRequest): void {
+  switch (request.style) {
+    case 'dot':
+    case 'dim':
+      // Ponto sólido no canto superior direito, com anel claro em volta para
+      // destacar de favicons escuros.
+      circle(ctx, SIZE - 9, 9, 9, '#ffffff');
+      circle(ctx, SIZE - 9, 9, 7, ACCENT);
+      return;
+
+    case 'count': {
+      const label = request.count > 9 ? '9+' : String(Math.max(request.count, 2));
+      const wide = label.length > 1;
+      const width = wide ? 22 : 18;
+      const left = SIZE - width - 1;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(left - 2, -1, width + 4, 22, 11);
+      ctx.fill();
+
+      ctx.fillStyle = ACCENT;
+      ctx.beginPath();
+      ctx.roundRect(left, 1, width, 18, 9);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `700 ${wide ? 12 : 14}px system-ui, -apple-system, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, left + width / 2, 11);
+      return;
+    }
+
+    case 'emoji':
+      // Emoji colorido do próprio sistema, sobre um disco claro.
+      circle(ctx, SIZE - 10, 10, 11, '#ffffff');
+      ctx.font = '16px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🔁', SIZE - 10, 11);
+      return;
+
+    case 'ring':
+      // Moldura em volta do favicon inteiro.
+      ctx.strokeStyle = ACCENT;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.roundRect(1.75, 1.75, SIZE - 3.5, SIZE - 3.5, 8);
+      ctx.stroke();
+      return;
+  }
+}
+
+function circle(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  fill: string,
+): void {
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
 /** Quadrado neutro para páginas sem favicon. */
-function drawPlaceholder(ctx: CanvasRenderingContext2D): void {
+function drawPlaceholder(ctx: CanvasRenderingContext2D, inset: number): void {
   ctx.fillStyle = '#9ca3af';
   ctx.beginPath();
-  ctx.roundRect(3, 3, SIZE - 6, SIZE - 6, 7);
+  ctx.roundRect(inset + 3, inset + 3, SIZE - inset * 2 - 6, SIZE - inset * 2 - 6, 7);
   ctx.fill();
 }

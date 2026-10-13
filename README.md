@@ -5,7 +5,7 @@ Extensão Manifest V3 (Brave/Chrome) que identifica páginas duplicadas entre as
 - **Prefixo no título**: abas com a mesma URL (após normalização) ganham um prefixo configurável (`🔁 `). O prefixo some quando a aba deixa de ser duplicada.
 - **Tooltip em links**: ao passar o mouse sobre um link cuja página já está aberta em outra aba, aparece um aviso com o título daquela aba.
 - **Alt+clique / clique do meio** em um link já aberto focam a aba existente em vez de abrir outra.
-- **Ponto no favicon**: a aba duplicada ganha um ponto vermelho de notificação sobre o próprio favicon, visível na barra de abas.
+- **Marca no favicon**: a aba duplicada ganha uma marcação sobre o próprio favicon, visível na barra de abas. Cinco estilos no popup: ponto vermelho, número de abas repetidas, emoji 🔁, moldura vermelha ou favicon acinzentado.
 - **Badge no ícone da extensão**: mostra quantas abas são repetidas (ou seja, quantas dá para fechar).
 - **Popup**: lista os grupos de abas duplicadas (ir para / fechar) e liga/desliga cada funcionalidade.
 
@@ -45,7 +45,7 @@ Por padrão a extensão não roda em janelas anônimas. Para testar esse cenári
 | [lib/settings.ts](lib/settings.ts) | Configurações em `chrome.storage.sync`. |
 | [lib/messages.ts](lib/messages.ts) | Contrato de mensagens entre background, content script e popup. |
 | [lib/title-prefix.ts](lib/title-prefix.ts) | Aplica/remove o prefixo no `<title>` com `MutationObserver`. |
-| [lib/favicon-badge.ts](lib/favicon-badge.ts) | Redesenha o favicon da aba com um ponto de notificação. |
+| [lib/favicon-badge.ts](lib/favicon-badge.ts) | Redesenha o favicon da aba com a marcação escolhida. |
 | [entrypoints/background.ts](entrypoints/background.ts) | Fonte da verdade: mapa `tabId → URL normalizada`, detecção de duplicatas, transmissão de estado. |
 | [entrypoints/content.tsx](entrypoints/content.tsx) | Prefixo no título + ponto no favicon + tooltip (Shadow DOM) + Alt/meio-clique. |
 | [entrypoints/popup/](entrypoints/popup/) | Popup React. |
