@@ -16,7 +16,9 @@ const HOVER_DELAY_MS = 150;
 export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_idle',
-  cssInjectionMode: 'ui',
+  // Sem cssInjectionMode: 'ui' de propósito. Ele faz o WXT buscar
+  // content-scripts/content.css em runtime, que não existe (o tooltip usa
+  // estilos inline), e o navegador bloqueia o fetch.
 
   async main(ctx) {
     let state: TabStateMessage | null = null;
