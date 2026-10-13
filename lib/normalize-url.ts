@@ -43,6 +43,12 @@ const TRACKING_PARAMS = new Set([
   'mc_eid',
   'ref_src',
   'mkt_tok',
+  // Parâmetros de contexto/compartilhamento: mudam de onde o link veio, não
+  // a página que ele abre.
+  'si',
+  'pp',
+  'feature',
+  'ab_channel',
   'vero_id',
   'vero_conv',
   '_hsenc',

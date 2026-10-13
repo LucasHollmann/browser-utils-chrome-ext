@@ -46,6 +46,19 @@ describe('normalizeUrl', () => {
       );
     });
 
+    it('ignora parâmetros de contexto de compartilhamento', () => {
+      // Links do YouTube carregam pp/si/feature conforme de onde foram clicados.
+      same(
+        'https://www.youtube.com/watch?v=abc&pp=xyz&feature=shared',
+        'https://www.youtube.com/watch?v=abc',
+      );
+      same('https://youtu.be/abc?si=123', 'https://youtu.be/abc');
+    });
+
+    it('não confunde vídeos diferentes', () => {
+      differ('https://www.youtube.com/watch?v=abc', 'https://www.youtube.com/watch?v=def');
+    });
+
     it('preserva parâmetros funcionais', () => {
       expect(normalizeUrl('https://a.com/busca?q=react&utm_source=news')).toBe(
         'http://a.com/busca?q=react',

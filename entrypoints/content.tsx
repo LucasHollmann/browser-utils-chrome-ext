@@ -123,20 +123,36 @@ export default defineContentScript({
       return openByKey.get(key);
     }
 
-    function anchorFrom(target: EventTarget | null): HTMLAnchorElement | null {
-      if (!(target instanceof Element)) return null;
-      return target.closest('a[href]');
+    /**
+     * O <a> por baixo do ponteiro.
+     *
+     * Usa composedPath() porque sites feitos com web components (YouTube,
+     * Reddit, GitHub) montam os links dentro de shadow roots: nesses casos o
+     * event.target que chega ao document é o host do shadow root, e um
+     * closest() nele nunca encontraria o <a>.
+     */
+    function anchorFromEvent(event: Event): HTMLAnchorElement | null {
+      for (const node of event.composedPath()) {
+        if (node instanceof HTMLAnchorElement && node.hasAttribute('href')) {
+          return node;
+        }
+      }
+      const target = event.target;
+      return target instanceof Element ? target.closest('a[href]') : null;
     }
 
     // Delegação: um único listener no document cobre links adicionados
     // dinamicamente, sem precisar observar o DOM.
     ctx.addEventListener(document, 'mouseover', (event) => {
-      const anchor = anchorFrom(event.target);
-      if (!anchor || anchor === hoveredAnchor) return;
+      const anchor = anchorFromEvent(event);
+      if (anchor === hoveredAnchor) return;
 
+      // Trocou de link, ou saiu de um link para fora dele: o mouseover do
+      // novo elemento já serve de "saída" do anterior.
       hoveredAnchor = anchor;
       cancelHover();
       tooltipStore.hide();
+      if (!anchor) return;
 
       const match = matchFor(anchor);
       if (!match) return;
@@ -159,10 +175,10 @@ export default defineContentScript({
     });
 
     ctx.addEventListener(document, 'mouseout', (event) => {
-      const anchor = anchorFrom(event.target);
-      if (!anchor || anchor !== hoveredAnchor) return;
-      // Ignora o trânsito entre elementos filhos do próprio link.
-      if (anchorFrom(event.relatedTarget) === anchor) return;
+      if (!hoveredAnchor) return;
+      // Sair para fora da janela (relatedTarget nulo). Trocar de elemento
+      // dentro da página é tratado pelo mouseover do elemento novo.
+      if (event.relatedTarget !== null) return;
       hoveredAnchor = null;
       cancelHover();
       tooltipStore.hide();
@@ -184,7 +200,7 @@ export default defineContentScript({
 
     function focusExisting(event: MouseEvent): boolean {
       if (!state?.focusExistingTabEnabled) return false;
-      const anchor = anchorFrom(event.target);
+      const anchor = anchorFromEvent(event);
       if (!anchor) return false;
       const match = matchFor(anchor);
       if (!match) return false;
@@ -202,7 +218,7 @@ export default defineContentScript({
       (event) => {
         // Impede o autoscroll do botão do meio antes que ele comece.
         if (event.button === 1 && state?.focusExistingTabEnabled) {
-          const anchor = anchorFrom(event.target);
+          const anchor = anchorFromEvent(event);
           if (anchor && matchFor(anchor)) event.preventDefault();
         }
       },
@@ -226,6 +242,23 @@ export default defineContentScript({
       },
       { capture: true },
     );
+
+    /**
+     * Diagnóstico: rode __abasDuplicadas() no console da página, com o
+     * contexto do console trocado para a extensão. Mostra se o estado chegou
+     * do background e quais URLs ele conhece.
+     */
+    Object.assign(globalThis, {
+      __abasDuplicadas: () => ({
+        estado: state,
+        tooltipMontado: ui.mounted != null,
+        abasConhecidas: [...openByKey.entries()].map(([key, tab]) => ({
+          key,
+          titulo: tab.title,
+        })),
+        chaveDestaPagina: normalizeUrl(location.href, state?.normalize),
+      }),
+    });
 
     // Extensão recarregada/atualizada: devolve o título ao original.
     ctx.onInvalidated(() => {
